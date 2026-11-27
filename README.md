@@ -42,5 +42,6 @@ Command-line flags: `--demo` (built-in test signal), `--list-devices`, `--no-sav
 
 Derived from [Friture](https://github.com/tlecomte/friture) by Timothée Lecomte and contributors.  
 Licensed under the GNU GPL v3 like the original.  
-  
-hope u like it :3
+
+
+:3
