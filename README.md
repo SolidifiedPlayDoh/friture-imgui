@@ -1,29 +1,29 @@
 # friture-imgui
 
 A C++ / [Dear ImGui](https://github.com/ocornut/imgui) rewrite of [Friture](https://github.com/tlecomte/friture),
-the real-time audio analyzer, with a flat dark look.
+the popular but visibly dated realtime audio visualizer
 
 ![screenshot](docs/screenshot.png)
 
-## Widgets
+## widgets
 
-| Widget | What it does |
-| --- | --- |
-| Scope | Triggered time-domain view of one or two channels |
-| FFT Spectrum | Smoothed spectrum, peak hold, A/B/C weighting, dual-channel difference, pitch label |
-| 2D Spectrogram | Scrolling GPU spectrogram (Linear / Log / Mel / ERB / Octave axes) |
-| Octave Spectrum | 1, 3, 6, 12 or 24 bands per octave with IEC-style time response |
-| Long Time Levels | RMS level history up to 30 minutes |
-| Delay Estimator | GCC-PHAT inter-channel delay (ms and metres) with correlation and polarity |
-| Pitch Tracker | SWIPE-style pitch estimate with note names |
-| Generator | Sine, white/pink noise, log sweep and burst on any output device |
+| Widget name      | Function                                                                                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scope            | a visualizer of the wave form of audio. supports dual channel audio. with the sample span configurable in the settings button above the window |
+| FFT Spectrum     | the audio spectrum. can be smoothed with configurable FFT window sizes                                                                         |
+| 2D Spectrogram   | GPU based spectrogram (Linear / Log / Mel / ERB / Octave support)                                                                              |
+| Octave Spectrum  | 1, 3, 6, 12 or 24 bands per octave with IEC style time response                                                                                |
+| Long Time Levels | RMS level display with history up to 30 minutes                                                                                                |
+| Delay Estimator  | GCC-PHAT interchannel delay (ms and metres) with correlation and polarity                                                                      |
+| Pitch Tracker    | pitch estimate with note names                                                                                                                 |
+| Generator        | audio signal generator (Sine, white noise / pink noise / log sweep / burst)                                                                    |
 
-Plus IEC peak / RMS level meters, free docking, and a persisted layout.
+Plus IEC peak / RMS level meters, free docking, and an easily configurable layout.
 
 ## Build
 
-Needs CMake, Ninja and a C++17 compiler. Dependencies (GLFW, Dear ImGui, ImPlot, miniaudio, pocketfft)
-are fetched by CMake.
+needs CMake, Ninja, and a C++17 compiler. Dependencies (glfw, dear imgui, implot, miniaudio, pocketfft)  
+are auto fetched by CMake
 
 ```sh
 git clone https://github.com/SolidifiedPlayDoh/friture-imgui.git
@@ -40,5 +40,7 @@ Command-line flags: `--demo` (built-in test signal), `--list-devices`, `--no-sav
 
 ## Credits and license
 
-Derived from [Friture](https://github.com/tlecomte/friture) by Timothée Lecomte and contributors.
-Licensed under the GNU GPL v3, like the original.
+Derived from [Friture](https://github.com/tlecomte/friture) by Timothée Lecomte and contributors.  
+Licensed under the GNU GPL v3 like the original.  
+  
+hope u like it :3
