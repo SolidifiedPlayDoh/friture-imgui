@@ -11,17 +11,15 @@
 namespace fr {
 
 class AudioEngine;
-class Player;
 class SignalGenerator;
 
 // State shared by all widgets.
 struct Context {
     RingBuffer ring;          // live input history
     AudioEngine* engine = nullptr;
-    Player* player = nullptr;
     SignalGenerator* generator = nullptr;
     int channels = 1;         // 1 or 2 active input channels
-    bool recording = true;    // live capture running
+    bool running = true;      // live capture running
     float uiScale = 1.f;
 };
 

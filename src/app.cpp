@@ -105,12 +105,9 @@ bool App::init() {
     std::string err;
     if (!engine_.init(&err)) audioError_ = err;
     ctx_.engine = &engine_;
-    ctx_.player = &player_;
     ctx_.generator = &generator_;
     ctx_.ring.configure(1, 1 << 20);
     engine_.addOutputSource(&generator_);
-    engine_.addOutputSource(&player_);
-    player_.setHistorySeconds(historySeconds_);
     openSavedInput();
 
     if (listDevices_) {
@@ -169,8 +166,6 @@ void App::loadSettings() {
     fpsLimitIndex_ = std::clamp(settings_.getInt("ui.fpslimit", 0), 0, 7);
     showFps_ = settings_.getBool("ui.showfps", true);
     uiScale_ = pendingUiScale_ = (float)settings_.getDouble("ui.scale", 1.0);
-    showPlayback_ = settings_.getBool("audio.showplayback", true);
-    historySeconds_ = std::clamp(settings_.getInt("audio.history", 30), 1, 300);
     firstChannel_ = settings_.getInt("audio.first", 0);
     secondChannel_ = settings_.getInt("audio.second", 1);
     demo_ = settings_.getBool("audio.demo", false) || demoCli_;
@@ -195,8 +190,6 @@ void App::saveSettings() {
     settings_.set("ui.fpslimit", fpsLimitIndex_);
     settings_.set("ui.showfps", showFps_);
     settings_.set("ui.scale", (double)uiScale_);
-    settings_.set("audio.showplayback", showPlayback_);
-    settings_.set("audio.history", historySeconds_);
     settings_.set("audio.first", firstChannel_);
     settings_.set("audio.second", secondChannel_);
     settings_.set("audio.duo", duo_);
@@ -272,7 +265,7 @@ void App::reconfigureInput() {
 // ----------------------------------------------------------------- audio feed
 
 void App::feedAudio(double dt) {
-    if (!ctx_.recording) return;
+    if (!ctx_.running) return;
     if (!demo_ && !engine_.inputRunning()) return;
     const bool duo = duo_ && (demo_ || engine_.inputChannels() > 1);
     size_t n = 0;
@@ -300,7 +293,6 @@ void App::feedAudio(double dt) {
     if (n > 0) {
         const float* planar[2] = {fa_.data(), duo ? fb_.data() : fa_.data()};
         ctx_.ring.push(planar, n);
-        player_.push(fa_.data(), duo ? fb_.data() : nullptr, n);
     }
 
     levels_.onData(chunk_, dt);
@@ -312,15 +304,14 @@ void App::feedAudio(double dt) {
 void App::drawMainMenuBar() {
     if (!ImGui::BeginMainMenuBar()) return;
 
-    bool rec = ctx_.recording;
-    if (ImGui::Button(rec ? "Stop" : "Start")) {
-        if (rec) {
-            player_.stop();
+    bool running = ctx_.running;
+    if (ImGui::Button(running ? "Stop" : "Start")) {
+        if (running) {
             engine_.stopInput();
-            ctx_.recording = false;
+            ctx_.running = false;
         } else {
             if (!demo_) engine_.startInput();
-            ctx_.recording = true;
+            ctx_.running = true;
             for (auto& d : docks_) d->widget->onStreamReset();
         }
     }
@@ -341,55 +332,6 @@ void App::drawMainMenuBar() {
         ImGui::TextDisabled("%s", b);
     }
     ImGui::EndMainMenuBar();
-}
-
-void App::drawPlaybackBar(float height) {
-    ImGuiViewport* vp = ImGui::GetMainViewport();
-    ImGuiWindowFlags f = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
-                         ImGuiWindowFlags_NoDocking;
-    if (!ImGui::BeginViewportSideBar("##playback", vp, ImGuiDir_Down, height, f)) {
-        ImGui::End();
-        return;
-    }
-    double recorded = player_.recordedSeconds();
-    bool playing = player_.playing();
-    if (player_.takeFinished()) playing = false;
-
-    if (ctx_.recording) ImGui::BeginDisabled();
-    if (ImGui::Button("Record")) {
-        player_.stop();
-        if (!demo_) engine_.startInput();
-        ctx_.recording = true;
-        for (auto& d : docks_) d->widget->onStreamReset();
-    }
-    if (ctx_.recording) ImGui::EndDisabled();
-    ImGui::SameLine();
-    if (!ctx_.recording && !playing) ImGui::BeginDisabled();
-    if (ImGui::Button("Stop")) {
-        if (playing) player_.stop();
-        else {
-            engine_.stopInput();
-            ctx_.recording = false;
-        }
-    }
-    if (!ctx_.recording && !playing) ImGui::EndDisabled();
-    ImGui::SameLine();
-    if (ctx_.recording || playing || recorded <= 0.0) ImGui::BeginDisabled();
-    if (ImGui::Button("Play")) player_.play(playStart_);
-    if (ctx_.recording || playing || recorded <= 0.0) ImGui::EndDisabled();
-
-    ImGui::SameLine();
-    float lo = -(float)std::max(recorded, 0.1);
-    if (playing) playPos_ = (float)player_.playbackTime();
-    else playPos_ = std::clamp(playStart_, lo, 0.f);
-    if (!playing) playStart_ = playPos_;
-    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize("-000.0 s").x - 24);
-    if (ctx_.recording || playing) ImGui::BeginDisabled();
-    ImGui::SliderFloat("##pos", &playStart_, lo, 0.f, "");
-    if (ctx_.recording || playing) ImGui::EndDisabled();
-    ImGui::SameLine();
-    ImGui::Text("%.1f s", playing ? playPos_ : playStart_);
-    ImGui::End();
 }
 
 void App::drawStatusBar(float height) {
@@ -473,7 +415,7 @@ void App::drawAudioSettings() {
             demo_ = true;
             engine_.stopInput();
             audioError_.clear();
-            ctx_.recording = true;
+            ctx_.running = true;
             reconfigureInput();
         }
         for (int i = 0; i < (int)ins.size(); ++i) {
@@ -483,7 +425,7 @@ void App::drawAudioSettings() {
                 if (engine_.openInput(i, &err)) {
                     demo_ = false;
                     audioError_.clear();
-                    ctx_.recording = true;
+                    ctx_.running = true;
                     reconfigureInput();
                 } else {
                     audioError_ = err;
@@ -504,10 +446,8 @@ void App::drawAudioSettings() {
     if (ui::combo("Input mode", mode, modes, nch > 1 ? 2 : 1)) duo_ = mode == 1;
     ui::combo(duo_ ? "First channel" : "Channel", firstChannel_, chPtrs.data(), nch);
     if (duo_ && nch > 1) ui::combo("Second channel", secondChannel_, chPtrs.data(), nch);
-    if (ui::spinInt("History length", historySeconds_, 1, 300, " s")) player_.setHistorySeconds(historySeconds_);
-    ui::check("Show playback controls", showPlayback_);
 
-    ImGui::SeparatorText("Audio output (generator and playback)");
+    ImGui::SeparatorText("Audio output (generator)");
     const auto& outs = engine_.outputDevices();
     int ocur = engine_.outputIndex();
     ui::label("Output device");
@@ -644,7 +584,6 @@ void App::run() {
         drawMainMenuBar();
         const float barH = ImGui::GetFrameHeight() + ImGui::GetStyle().WindowPadding.y * 1.2f;
         drawStatusBar(barH);
-        if (showPlayback_) drawPlaybackBar(barH * 1.1f);
 
         ImGuiID dockspace = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
         if (freshLayout_ && !layoutBuilt) {

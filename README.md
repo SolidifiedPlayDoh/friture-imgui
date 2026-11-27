@@ -18,7 +18,7 @@ the real-time audio analyzer, with a flat dark look.
 | Pitch Tracker | SWIPE-style pitch estimate with note names |
 | Generator | Sine, white/pink noise, log sweep and burst on any output device |
 
-Plus IEC peak / RMS level meters, record and playback of the last N seconds, free docking, and a persisted layout.
+Plus IEC peak / RMS level meters, free docking, and a persisted layout.
 
 ## Build
 
@@ -26,6 +26,8 @@ Needs CMake, Ninja and a C++17 compiler. Dependencies (GLFW, Dear ImGui, ImPlot,
 are fetched by CMake.
 
 ```sh
+git clone https://github.com/SolidifiedPlayDoh/friture-imgui.git
+cd friture-imgui
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 ninja -C build
 ./build/friture

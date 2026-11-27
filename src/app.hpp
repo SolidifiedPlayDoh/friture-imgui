@@ -7,7 +7,6 @@
 #include "audio/demo_source.hpp"
 #include "audio/engine.hpp"
 #include "audio/generator.hpp"
-#include "audio/player.hpp"
 #include "settings.hpp"
 #include "ui/levels_panel.hpp"
 #include "widgets/widget.hpp"
@@ -50,7 +49,6 @@ private:
     // frame pieces
     void feedAudio(double dt);
     void drawMainMenuBar();
-    void drawPlaybackBar(float height);
     void drawStatusBar(float height);
     void drawDock(Dock& d);
     void drawLevels();
@@ -70,7 +68,6 @@ private:
     GLFWwindow* window_ = nullptr;
     Context ctx_;
     AudioEngine engine_;
-    Player player_;
     SignalGenerator generator_;
     LevelsPanel levels_;
     Settings settings_;
@@ -83,8 +80,6 @@ private:
     // audio config
     int firstChannel_ = 0, secondChannel_ = 1;
     bool duo_ = false;
-    int historySeconds_ = 30;
-    bool showPlayback_ = true;
     std::string savedInputName_, savedOutputName_;
     std::string audioError_;
     bool demo_ = false;
@@ -92,10 +87,6 @@ private:
     double demoCarry_ = 0.0;
     Chunk chunk_;
     std::vector<float> fa_, fb_;
-
-    // playback transport
-    float playStart_ = 0.f;  // slider value, seconds (<= 0)
-    float playPos_ = 0.f;
 
     // display
     bool vsync_ = true;

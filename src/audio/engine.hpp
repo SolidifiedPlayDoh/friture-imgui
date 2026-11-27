@@ -16,7 +16,7 @@ struct DeviceInfo {
     int maxChannels = 2;
 };
 
-// Producers of output audio (generator, history playback). mixInto() runs on
+// Producers of output audio (e.g. signal generator). mixInto() runs on
 // the audio thread and must *add* into the interleaved buffer.
 class OutputSource {
 public:
